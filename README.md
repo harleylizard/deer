@@ -15,7 +15,11 @@ tasks.distribute {
         token = "..."
         changes.set(listOf("example"))
 
-        channel(serverId, channelId)
+        server(your_server) {
+            channel(your_channel)
+
+            notify(Role.everyone)
+        }
     }
 }
 ```

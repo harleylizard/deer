@@ -98,11 +98,16 @@ open class DistributeTask @Inject constructor(objects: ObjectFactory) : DefaultT
             val embed = builder.build()
 
             for (guild in jda.guilds) {
-                val channel = discord.getChannel(guild)
+                val server = discord.get(guild)
+                if (server != null) {
+                    val notifying = server.notifying(guild)
 
-                if (channel != null) {
-                    val file = FileUpload.fromData(Files.newInputStream(path), name)
-                    channel.sendMessageEmbeds(embed).addFiles(file).queue()
+                    val channels = server.channels(guild)
+                    for (channel in channels) {
+
+                        val file = FileUpload.fromData(Files.newInputStream(path), name)
+                        channel.sendMessage(notifying).setEmbeds(embed).addFiles(file).queue()
+                    }
                 }
             }
             jda.shutdown()
