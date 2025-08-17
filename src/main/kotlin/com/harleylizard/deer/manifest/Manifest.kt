@@ -22,9 +22,9 @@ class Manifest private constructor(private val dependencies: List<Dependency>) {
         fun of(project: Project): Manifest {
             val dependencies = mutableListOf<Dependency>()
 
-            val implementation = project.configurations.getByName("resolved")
+            val resolved = project.configurations.getByName("resolved")
 
-            implementation.resolvedConfiguration.resolvedArtifacts.map(Dependency::of).forEach(dependencies::add)
+            resolved.resolvedConfiguration.resolvedArtifacts.map(Dependency::of).forEach(dependencies::add)
             return Manifest(Collections.unmodifiableList(dependencies))
         }
     }

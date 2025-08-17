@@ -3,6 +3,11 @@ package com.harleylizard.deer
 import com.google.gson.GsonBuilder
 import com.harleylizard.deer.manifest.Dependency
 import com.harleylizard.deer.manifest.Manifest
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.utils.FileUpload
+import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
@@ -11,9 +16,8 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
-import java.io.File
+import org.gradle.jvm.tasks.Jar
 import java.io.FileInputStream
-import java.io.InputStream
 import java.nio.file.Files
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -21,6 +25,12 @@ import javax.inject.Inject
 
 open class DistributeTask @Inject constructor(objects: ObjectFactory) : DefaultTask() {
     private val artifact: RegularFileProperty = objects.fileProperty()
+
+    private val discord = Discord(objects)
+
+    init {
+        artifact.set(project.tasks.named("jar", Jar::class.java).flatMap { it.archiveFile })
+    }
 
     fun artifact(file: RegularFile) {
         artifact.set(file)
@@ -35,9 +45,13 @@ open class DistributeTask @Inject constructor(objects: ObjectFactory) : DefaultT
         artifact.set(task.flatMap { it.archiveFile })
     }
 
+    fun discord(action: Action<Discord>) {
+        discord.also(action::execute)
+    }
+
     @TaskAction
     fun publish() {
-        val path = project.layout.buildDirectory.asFile.get().toPath().resolve("libs").resolve("${project.name}-${project.version}.zip")
+        val path = project.layout.buildDirectory.asFile.get().toPath().resolve("libs").resolve("${artifact.asFile.get().nameWithoutExtension}.zip")
 
         path.parent.takeUnless(Files::isDirectory)?.let(Files::createDirectories)
 
@@ -48,42 +62,37 @@ open class DistributeTask @Inject constructor(objects: ObjectFactory) : DefaultT
             .create()
 
         ZipOutputStream(Files.newOutputStream(path)).use {
-            val stack = ZipStack(it)
-
-            stack.push("manifest.json")
-            stack.write(gson.toJson(Manifest.of(project)).encodeToByteArray())
-            stack.pop()
+            var entry = ZipEntry("manifest.json")
+            it.putNextEntry(entry)
+            it.write(gson.toJson(Manifest.of(project)).encodeToByteArray())
+            it.closeEntry()
 
             val jar = artifact.get().asFile
             FileInputStream(jar).use { file ->
-                stack.push(jar)
-                stack.write(file)
-                stack.pop()
+                entry = ZipEntry("${jar.nameWithoutExtension}.zip")
+                it.putNextEntry(entry)
+                file.copyTo(it)
+                it.closeEntry()
             }
         }
-    }
 
-    private class ZipStack(private val zip: ZipOutputStream) {
+        val token = discord.token
+        if (token.isPresent) {
+            val jda = JDABuilder.createDefault(token.get(), GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT).build()
+            jda.awaitReady()
 
-        fun push(name: String) {
-            val entry = ZipEntry(name)
-            zip.putNextEntry(entry)
-        }
+            for (guild in jda.guilds) {
+                val channel = discord.getChannel(guild)
 
-        fun push(file: File) {
-            push(file.name)
-        }
+                if (channel != null) {
+                    val embedded = EmbedBuilder()
+                    embedded.setTitle("Test")
 
-        fun write(inputStream: InputStream) {
-            inputStream.copyTo(zip)
-        }
-
-        fun write(bytes: ByteArray) {
-            zip.write(bytes, 0, bytes.size)
-        }
-
-        fun pop() {
-            zip.closeEntry()
+                    val file = FileUpload.fromData(Files.newInputStream(path), "test.zip")
+                    channel.sendMessageEmbeds(embedded.build()).addFiles(file).queue()
+                }
+            }
+            jda.shutdown()
         }
     }
 }

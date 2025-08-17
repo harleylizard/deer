@@ -22,7 +22,9 @@ repositories {
 }
 
 dependencies {
+    implementation("it.unimi.dsi:fastutil:8.5.16")
     implementation("com.google.code.gson:gson:2.13.1")
+    implementation("net.dv8tion:JDA:5.6.1")
 
     compileOnly("io.github.sgtsilvio.gradle:gradle-proguard:0.8.0")
 
@@ -32,6 +34,10 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.publish {
+    dependsOn(tasks.validatePlugins)
 }
 
 publishing {

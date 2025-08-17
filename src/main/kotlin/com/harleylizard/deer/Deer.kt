@@ -18,7 +18,7 @@ class Deer : Plugin<Project> {
         configurations.create("resolved") {
             it.isCanBeResolved = true
             it.extendsFrom(configurations.getByName("runtimeElements"))
-            it.extendsFrom(configurations.getByName("compileClasspath"))
+            it.extendsFrom(configurations.getByName("implementation"))
         }
     }
 }
