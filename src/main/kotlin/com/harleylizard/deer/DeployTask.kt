@@ -23,7 +23,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 
-open class DistributeTask @Inject constructor(objects: ObjectFactory) : DefaultTask() {
+open class DeployTask @Inject constructor(objects: ObjectFactory) : DefaultTask() {
     private val artifact: RegularFileProperty = objects.fileProperty()
 
     private val discord = Discord(objects)

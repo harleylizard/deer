@@ -1,6 +1,9 @@
 # Deer
-Gradle plugin for publishing lwjgl java applications
+Gradle plugin for publishing java applications
 
+Creates and packages a manifest file of project dependencies to be downloaded when the application is ran.
+
+**Uses the current platform to determine manifest dependencies. E.g. windows natives for lwjgl (requires lwjgl plugin)
 ## Examples
 
 Discord Integration
@@ -9,7 +12,7 @@ plugins {
     id("com.harleylizard.deer") version "version"
 }
 
-tasks.distribute {
+tasks.deploy {
     artifact(tasks.jar)
     discord {
         token = "..."
@@ -40,7 +43,7 @@ val proguardJar by tasks.registering(proguard.taskClass) {
     // ...
 }
 
-tasks.distribute {
+tasks.deploy {
     artifact(proguardJar)
 }
 ```

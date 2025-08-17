@@ -9,7 +9,7 @@ class Deer : Plugin<Project> {
     override fun apply(target: Project) {
         val tasks = target.tasks
 
-        tasks.register("distribute", DistributeTask::class.java, target.objects).configure {
+        tasks.register("deploy", DeployTask::class.java, target.objects).configure {
             it.group = "build"
             it.dependsOn(tasks.named("build", DefaultTask::class.java))
         }
