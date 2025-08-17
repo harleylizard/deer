@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.2.0"
+    kotlin("jvm") version "2.0.0"
     `java-gradle-plugin`
     `maven-publish`
 }
@@ -18,10 +18,13 @@ gradlePlugin {
 
 repositories {
     mavenCentral()
+    gradlePluginPortal()
 }
 
 dependencies {
     implementation("com.google.code.gson:gson:2.13.1")
+
+    compileOnly("io.github.sgtsilvio.gradle:gradle-proguard:0.8.0")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
