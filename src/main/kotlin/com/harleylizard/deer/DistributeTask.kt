@@ -51,7 +51,8 @@ open class DistributeTask @Inject constructor(objects: ObjectFactory) : DefaultT
 
     @TaskAction
     fun publish() {
-        val path = project.layout.buildDirectory.asFile.get().toPath().resolve("libs").resolve("${artifact.asFile.get().nameWithoutExtension}.zip")
+        val name = "${artifact.asFile.get().nameWithoutExtension}.zip"
+        val path = project.layout.buildDirectory.asFile.get().toPath().resolve("libs").resolve(name)
 
         path.parent.takeUnless(Files::isDirectory)?.let(Files::createDirectories)
 
@@ -81,15 +82,27 @@ open class DistributeTask @Inject constructor(objects: ObjectFactory) : DefaultT
             val jda = JDABuilder.createDefault(token.get(), GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT).build()
             jda.awaitReady()
 
+            val builder = EmbedBuilder()
+            builder.setTitle(artifact.asFile.get().nameWithoutExtension)
+
+            val changes = discord.changes.orNull ?: emptySet()
+            if (changes.isNotEmpty()) {
+                val points = StringBuilder()
+                for (change in changes) {
+                    points.append("・ ").append(change).append("\n")
+                }
+
+                builder.addField("Changes", points.toString(), true)
+            }
+
+            val embed = builder.build()
+
             for (guild in jda.guilds) {
                 val channel = discord.getChannel(guild)
 
                 if (channel != null) {
-                    val embedded = EmbedBuilder()
-                    embedded.setTitle("Test")
-
-                    val file = FileUpload.fromData(Files.newInputStream(path), "test.zip")
-                    channel.sendMessageEmbeds(embedded.build()).addFiles(file).queue()
+                    val file = FileUpload.fromData(Files.newInputStream(path), name)
+                    channel.sendMessageEmbeds(embed).addFiles(file).queue()
                 }
             }
             jda.shutdown()
